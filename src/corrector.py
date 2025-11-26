@@ -1,65 +1,63 @@
 import json
-import difflib  # Added for Sprint 2: Fuzzy matching logic
+import difflib
 
-
-# Creating classes to correct errored word step by step
-# Sprint 1: Basic mapping
-# Sprint 2: Advanced fuzzy matching
+# Sprint 3 Update: Added LLM Prototype for fallback handling
 
 class BengaliCorrector:
     def __init__(self, dictionary_path):
         self.mappings = {}
-        self.vocabulary = []  # storing vocabulary to fuzzyfy
+        self.vocabulary = []
         self._load_dictionary(dictionary_path)
 
     def _load_dictionary(self, path):
-        """
-        Loads direct error mappings and valid vocabulary from JSON.
-        """
+        """Loads direct error mappings and valid vocabulary from JSON."""
         try:
             with open(path, 'r', encoding='utf-8') as f:
                 data = json.load(f)
-
-                # Check if data is the old flat format or new structured format
                 if "direct_mappings" in data:
                     self.mappings = data["direct_mappings"]
                     self.vocabulary = data.get("valid_vocabulary", [])
                 else:
-                    # Fallback for legacy format (Sprint 1 compatibility)
                     self.mappings = data
-                    self.vocabulary = list(data.values())  # Infer vocabulary if missing
-
+                    self.vocabulary = list(data.values())
         except FileNotFoundError:
             print(f"Error: Dictionary file not found at {path}")
             self.mappings = {}
             self.vocabulary = []
 
+    def _predict_with_llm(self, word):
+        """
+        Prototype: Simulates an API call to an LLM (e.g., OpenAI/Gemini).
+        Since we cannot use external APIs per constraints, this mocks the response.
+        """
+        # In production: response = openai.Completion.create(prompt=f"Correct Bengali OCR: {word}")
+        # For Assessment: returning the word tagged to demonstrate flow
+        return f"{word}?", "LLM Check"
+
     def correct(self, word):
         """
-        Logic:
+        Full Pipeline:
         1. Direct Mapping (O(1)) - Specific known errors
         2. Vocabulary Check (O(1)) - Already correct words
-        3. Fuzzy Match (Levenshtein) - Typos not in the map
-
-        Returns: (Corrected Word, Method)
+        3. Fuzzy Match (Levenshtein) - Typos (distance-based)
+        4. LLM Fallback (API) - Contextual prediction for unknowns
         """
         word = word.strip()
         if not word: return None, "Empty"
 
-        # Step 1: O(1) Lookup (Sprint 1 Feature)
+        # 1. Direct Lookup
         if word in self.mappings:
             return self.mappings[word], "Direct Map"
 
-        # Step 2: Check if the word is already valid (New Feature)
+        # 2. Validity Check
         if word in self.vocabulary:
             return word, "Valid"
 
-        # Step 3: Fuzzy Matching (Sprint 2 Feature - Advanced)
-        # Uses Levenshtein distance to find the closest vocabulary match
-        # cutoff=0.6 ensures we don't match completely random words
+        # 3. Fuzzy Matching
         matches = difflib.get_close_matches(word, self.vocabulary, n=1, cutoff=0.6)
-
         if matches:
             return matches[0], "Fuzzy Match"
 
-        return word, "Unresolved"
+        # 4. LLM Fallback (Sprint 3 Feature)
+        # If the word is truly unknown and fails fuzzy match, ask the AI.
+        return self._predict_with_llm(word)
