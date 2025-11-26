@@ -13,6 +13,8 @@ def main():
     input_path = os.path.join(base_dir, 'data', 'corrupted_words.txt')
     ## Direct mapping dictionary
     dict_path = os.path.join(base_dir, 'data', 'dictionary.json')
+    ## Adding a new file to save corrected words
+    output_path = os.path.join(base_dir, 'data', 'corrected_words.txt')
 
     # Initializing a self-made corrector object
     corrector = BengaliCorrector(dict_path)
@@ -22,18 +24,20 @@ def main():
 
     # Processing
     if os.path.exists(input_path):
-        with open(input_path, 'r', encoding='utf-8') as file:
-            lines = file.readlines()
+        with open(input_path, 'r', encoding='utf-8') as input_file, open(output_path, 'w', encoding='utf-8') as output_file:
+            lines = input_file.readlines()
 
-        for line in lines:
-            word = line.strip()
-            if not word:
-                continue
+            for line in lines:
+                word = line.strip()
+                if not word:
+                    continue
 
-            corrected, method = corrector.correct(word)
-            ## Trying to look it structured but without make it variable, the structure will fail
-            ## for sure, still distinguishable
-            print(f"{word:<15} | {corrected:<15} | {method:<15}")
+                corrected, method = corrector.correct(word)
+                ## Trying to look it structured but without make it variable, the structure will fail
+                ## for sure, still distinguishable
+                print(f"{word:<15} | {corrected:<15} | {method:<15}")
+                ## Saving the outputs
+                output_file.write(corrected + '\n')
     else:
         print(f"Error: Input file not found at {input_path}")
 
